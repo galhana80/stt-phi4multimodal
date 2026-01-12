@@ -30,9 +30,11 @@ The notebook follows this sequential flow:
 
 **Adapter Loading:**
 ```python
-model.load_adapter(MODEL_ID, adapter_name='speech', adapter_kwargs={'subfolder': 'speech-lora', 'offload_folder': '/tmp/'})
+# Note: offload_folder parameter not supported in all PEFT versions
+model.load_adapter(MODEL_ID, adapter_name='speech', adapter_kwargs={'subfolder': 'speech-lora'})
 model.set_adapter('speech')  # Critical: must activate adapter
 ```
+If adapter fails to load, model continues with base weights (reduced quality for audio tasks).
 
 ### ASR Function: `phi4_transcribe_or_translate()`
 
@@ -170,6 +172,18 @@ gc_utils.get_type = patched_get_type
 ## Error Handling & Debugging
 
 ### Common Failure Points & Solutions
+
+**CPU Detection & Performance Warning:**
+- Model loads on CPU if GPU unavailable; uses float32 (correct but slow)
+- **Impact**: Each transcription takes 2-5 minutes instead of 10-30 seconds
+- **Fix**: Ensure Colab runtime is T4/A100 GPU (Runtime → Change Runtime type)
+- **Alternative**: Use local GPU environment or cloud GPU service
+
+**speech-lora Adapter Loading Fails:**
+- Error: `find_adapter_config_file() got an unexpected keyword argument 'offload_folder'`
+- **Cause**: `offload_folder` parameter not supported in PEFT version
+- **Fix**: Remove `offload_folder` from `adapter_kwargs`
+- **Fallback**: Model continues with base weights (reduced audio quality)
 
 **`prepare_inputs_for_generation` Missing:**
 - Model class lacks method during generation
